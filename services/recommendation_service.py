@@ -53,10 +53,8 @@ class RecommendationService:
         if watched_items.empty:
             return None, "No valid watched items found"
 
-        # Генерируем эмбеддинги для элементов
         embeddings = self.generate_embeddings(df)
 
-        # Вычисляем рекомендации
         recommendations = self.calculate_similar_items(embeddings, watched_items, df)
 
         return recommendations, None
