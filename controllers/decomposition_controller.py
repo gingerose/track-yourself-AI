@@ -1,21 +1,23 @@
 from flask import Blueprint, request, jsonify
-from services.decomposition_service import Decompose_task
+from services.decomposition_service import DecompositionService
 from extensions import db
 
 decomposition_bp = Blueprint('decomposition', __name__)
-#decomposition_service = DecompositionService(api_key='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')  # Замените на ваш API-ключ
+decomposition_service = DecompositionService(db)
 
 @decomposition_bp.route('/decompose-task', methods=['POST'])
 def decompose_task():
     data = request.json
-    task_description = data.get('task_description')
+
+    planId = data.get('planId')
+    task_description = data.get('name')
 
     if not task_description:
         return jsonify({'error': 'Invalid input'}), 400
 
-    steps, error = Decompose_task(task_description)
+    steps, error = decomposition_service.decompose_task(task_description, planId)
 
     if error:
         return jsonify({'error': error}), 500
 
-    return jsonify({'steps': steps}), 200
+    return jsonify(steps), 200

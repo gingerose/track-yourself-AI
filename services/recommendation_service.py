@@ -1,102 +1,71 @@
 import pandas as pd
 import tensorflow as tf
 from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.metrics.pairwise import cosine_similarity
+
+from utils.als_model import ALSModel
 
 
 class RecommendationService:
 
     def __init__(self):
-
         self.films_df = pd.read_csv('films.csv')
         self.books_df = pd.read_csv('books.csv', delimiter=';', encoding='utf-8')
 
         self.films_df = self.preprocess_data(self.films_df, 'film')
         self.books_df = self.preprocess_data(self.books_df, 'book')
 
+        self.als_model = ALSModel()
+
     def preprocess_data(self, df, collection_type):
-
         if collection_type == 'film':
-
             df['Genres'] = df['Genres'].apply(lambda x: x.split(',') if isinstance(x, str) else [])
-
             df = self.encode_genres(df, 'Genres')
         else:
-
             df['Category'] = df['Category'].apply(lambda x: x.split(',') if isinstance(x, str) else [])
             df = self.encode_genres(df, 'Category')
-
         return df
 
     def encode_genres(self, df, column):
-
         mlb = MultiLabelBinarizer()
-
         df_genres_encoded = pd.DataFrame(mlb.fit_transform(df[column]), columns=mlb.classes_, index=df.index)
-
         df = pd.concat([df, df_genres_encoded], axis=1)
-
         df.drop(columns=[column], inplace=True)
-
         return df
 
     def get_recommendations(self, collection_id, watched_ids):
-        if collection_id == '2435466':  # Фильмы
+        if collection_id == '2435466':
             df = self.films_df
-        elif collection_id == '9875768':  # Книги
+        elif collection_id == '9875768':
             df = self.books_df
         else:
             return None, "Invalid collection ID"
 
         watched_items = df[df['id'].isin(watched_ids)]
-
         if watched_items.empty:
             return None, "No valid watched items found"
 
-        embeddings = self.generate_embeddings(df)
-
-        recommendations = self.calculate_similar_items(embeddings, watched_items, df)
-
-        return recommendations, None
-
-    def generate_embeddings(self, df):
-        model = tf.keras.Sequential([
-            tf.keras.layers.Dense(128, activation='relu'),
-            tf.keras.layers.Dense(64, activation='relu'),
-            tf.keras.layers.Dense(32, activation='relu')
-        ])
-
-        features = df.drop(columns=['id', 'url', 'Name', 'PosterLink',  'Actors', 'Director',
+        features = df.drop(columns=['id', 'url', 'Name', 'PosterLink', 'Actors', 'Director',
                                     'Description', 'DatePublished', 'Keywords', 'ReviewAurthor',
-                                    'ReviewDate', 'ReviewBody', 'duration'])  # Оставляем только числовые признаки
+                                    'ReviewDate', 'ReviewBody', 'duration'])
 
-        print("Features before conversion (first 5 rows):")
-        print(features.head())
+        labels = features.copy()
+        self.als_model.train_model(features, labels)
 
-        features = features.astype('float32')
+        embeddings = self.als_model.generate_embeddings(features)
 
-        print("Features before conversion (first 5 rows):")
-        print(features.head())
+        watched_indices = watched_items.index.to_numpy()
 
-        embeddings = model.predict(features)
+        watched_indices_tensor = tf.convert_to_tensor(watched_indices, dtype=tf.int32)
 
-        return embeddings
+        watched_embeddings = tf.gather(embeddings, watched_indices_tensor)  # Use tf.gather for indexing
 
-    def calculate_similar_items(self, embeddings, watched_items, df):
-        watched_embeddings = embeddings[watched_items.index]
+        similarity_scores = self.als_model.calculate_similarity(embeddings, watched_embeddings)
 
-        similarity_scores = cosine_similarity(watched_embeddings, embeddings)
+        top_indices = tf.argsort(similarity_scores, axis=1, direction='DESCENDING')[:, :10]
 
-        top_indices = similarity_scores.argsort()[:, -10:][:, ::-1]
-        recommended_items = [df.iloc[idx] for idx in top_indices.flatten()]
+        recommended_items = [df.iloc[idx].to_dict() for idx in
+                             top_indices.numpy().flatten()]
 
-        print("Recommended items before conversion:")
-        print(recommended_items)
+        return recommended_items, None
 
-        recommendations_list = [item.to_dict() for item in recommended_items]
-
-        print("Recommendations list (first 5):")
-        print(recommendations_list[:5])
-
-        return recommendations_list
 

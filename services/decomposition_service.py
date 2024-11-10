@@ -1,31 +1,50 @@
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
 import openai
 
-# model = GPT2LMHeadModel.from_pretrained("gpt2")
-# tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+from repositories.plan_repository import PlanRepository
 
-openai.api_key = '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'
 
-def Decompose_task(task_description, min_points=6, max_points=10):
-    response = openai.Completion.create(
-        model="o1-preview",
-        prompt=f"Decompose the task '{task_description}' into {min_points} to {max_points} steps.",
-        temperature=0.9,
-        max_tockens=200,
-        stop=["\n", " Human:", " AI:"],
-    )
-    return response
-    # try:
-    #     prompt = f"Decompose the task '{task_description}' into {min_points} to {max_points} steps."
+class DecompositionService:
+    def __init__(self, db):
+        self.plan_repo = PlanRepository(db)
 
-    #     inputs = tokenizer.encode_plus(prompt, return_tensors="pt", padding=True, truncation=True)
-    #
-    #     outputs = model.generate(inputs['input_ids'], attention_mask=inputs['attention_mask'], max_length=150, num_return_sequences=1)
-    #
-    #     steps = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    #
-    #
-    #     return steps.split('\n'), None
-    #
-    # except Exception as e:
-    #     return None, str(e)
+    def decompose_task(self, task_description, plan_id, min_points=6, max_points=10):
+        try:
+            openai.api_key = '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'
+
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"Decompose the task '{task_description}' into {min_points} to {max_points} steps. "
+                    }
+                ]
+            )
+
+            message = response['choices'][0]['message']['content']
+            steps = message.strip().split('\n')
+
+            decomposition_text = "\n".join(steps)
+
+            updated_plan = self.plan_repo.update_plan_decomposition(plan_id, decomposition_text)
+
+            if not updated_plan:
+                return [], f"Plan with ID {plan_id} not found."
+
+            plan_data = {
+                "planId": updated_plan.plan_id,
+                "userId": updated_plan.user_id,
+                "status": updated_plan.status,
+                "name": updated_plan.name,
+                "description": updated_plan.description,
+                "duration": updated_plan.duration,
+                "priority": updated_plan.priority,
+                "deadline": updated_plan.deadline,
+                "dayOfWeek": updated_plan.day_of_week,
+                "decomposition": updated_plan.decomposition
+            }
+
+            return plan_data, None
+
+        except Exception as e:
+            return [], str(e)

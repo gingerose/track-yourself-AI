@@ -15,3 +15,4 @@ class Plan(db.Model):
     modify_date = db.Column(db.DateTime, default=datetime.utcnow)
     duration = db.Column(db.Integer)
     deadline = db.Column(db.Date)
+    decomposition = db.Column(db.String)

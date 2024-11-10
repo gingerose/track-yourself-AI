@@ -1,55 +1,47 @@
-from repositories.plan_repository import PlanRepository
-from utils.data_preprocessing import preprocess_data
-from utils.lstm_model import build_lstm_model, predict_schedule
 from datetime import timedelta, datetime
+
+from repositories.plan_repository import PlanRepository
+from repositories.schedule_repository import ScheduleRepository
+from utils.lstm_model import predict_schedule
 
 
 class ScheduleService:
     def __init__(self, db):
         self.plan_repo = PlanRepository(db)
+        self.schedule_repo = ScheduleRepository(db)
+
+    def get_schedule_by_date(self, user_id, date_str):
+        week_start = self.get_week_start(date_str)
+        week_end = week_start + timedelta(days=6)
+        return self.schedule_repo.get_plans_with_schedule(week_end, user_id)
 
     def get_week_start(self, date_str):
-
         date = datetime.strptime(date_str, "%d.%m.%Y").date()
         return date - timedelta(days=date.weekday())
 
-    def filter_by_deadline(self, plans, week_start):
+    def generate_week_schedule(self, user_id, date_str):
+        week_start = self.get_week_start(date_str)
+        week_end = week_start + timedelta(days=6)
 
-        week_start_date = week_start
-        return [plan for plan in plans if plan.deadline >= week_start_date]
-
-    def generate_schedule(self, user_id, date):
-        week_start = self.get_week_start(date)
-        plans = self.plan_repo.get_plans_by_user_before_date(user_id, week_start)
+        plans = self.plan_repo.get_plans_by_user_before_date(user_id, week_end)
 
         if not plans:
             return None, "No plans found for the user."
 
-        plans = self.filter_by_deadline(plans, week_start)
+        schedule_predictions = predict_schedule(plans, week_end)
+        schedule_predictions = {str(k): v for k, v in schedule_predictions.items()}
 
-        if not plans:
-            return None, "No tasks for this week based on deadlines."
+        # Получение и удаление существующего расписания
+        schedule = self.schedule_repo.get_schedule_by_date(week_end, user_id)
+        if schedule:
+            self.schedule_repo.delete_schedule_by_date(week_end, user_id)
 
-        plans_data = preprocess_data(plans)
-        productivity_schedule = predict_schedule(plans_data)
+        for day, schedules in schedule_predictions.items():
+            for schedule_data in schedules:
+                plan_id = schedule_data['plan_id']
+                date = week_end
+                day_of_week = day
+                self.schedule_repo.add_schedule(plan_id, date, day_of_week, schedule_data['suggested_time'])
 
-        result = []
-        for i, plan in enumerate(plans):
-            schedule_item = {
-                'plan_id': plan.plan_id,
-                'name': plan.name,
-                'description': plan.description,
-                'status': plan.status,
-                'creation_date': plan.creation_date.strftime('%Y-%m-%d'),
-                'day_of_week': (week_start + timedelta(days=i % 7)).strftime('%A'),
-                'priority': plan.priority,
-                'modify_date': plan.modify_date.strftime('%Y-%m-%d %H:%M:%S'),
-                'duration': plan.duration,
-                'deadline': plan.deadline.strftime('%Y-%m-%d'),
-                'time_of_day': productivity_schedule[i],
-            }
-            result.append(schedule_item)
+        return self.schedule_repo.get_plans_with_schedule(week_end, user_id), None
 
-        result = sorted(result, key=lambda x: (x['time_of_day'] == 'morning', x['priority']), reverse=True)
-
-        return result, None
