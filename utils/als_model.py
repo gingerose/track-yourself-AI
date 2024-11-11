@@ -5,15 +5,15 @@ from loger import Logger2
 
 class ALSModel:
 
-    def __init__(self):
+    def __init__(self, input_dim, output_dim):
         self.model = tf.keras.Sequential([
-            tf.keras.layers.Dense(256, activation='relu'),
+            tf.keras.layers.Dense(256, activation='relu', input_shape=(input_dim,)),
             tf.keras.layers.BatchNormalization(),
             tf.keras.layers.Dropout(0.3),
             tf.keras.layers.Dense(128, activation='relu'),
             tf.keras.layers.BatchNormalization(),
             tf.keras.layers.Dense(64, activation='relu'),
-            tf.keras.layers.Dense(32, activation='relu')
+            tf.keras.layers.Dense(output_dim, activation='relu')
         ])
         self.model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
 
