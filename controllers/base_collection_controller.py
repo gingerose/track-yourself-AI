@@ -27,7 +27,8 @@ def add_item():
         description=description
     )
 
-    return jsonify({'message': 'Item added successfully', 'item': item.id}), 201
+    return jsonify({'itemId': item.id, 'collectionId': item.collection_id, 'user_id': item.user_id, 'status': item.status,
+                   'description': item.description}), 201
 
 
 @base_collection_item_bp.route('/delete-item/<int:item_id>', methods=['DELETE'])
@@ -49,7 +50,7 @@ def get_items():
 
     items = base_collection_item_repository.get_items_by_user_and_collection(collection_id, user_id)
 
-    items_list = [{'id': item.id, 'collection_id': item.collection_id, 'user_id': item.user_id, 'status': item.status,
+    items_list = [{'itemId': item.id, 'collectionId': item.collection_id, 'user_id': item.user_id, 'status': item.status,
                    'description': item.description} for item in items]
 
     return jsonify(items_list), 200
@@ -66,3 +67,17 @@ def get_items_count():
     total_count, done_count = base_collection_item_repository.get_items_count_by_status(collection_id, user_id)
 
     return jsonify([done_count, total_count]), 200
+
+@base_collection_item_bp.route('/update-item-status', methods=['PUT'])
+def update_item_status():
+    data = request.json
+    item_id = data.get('itemId')
+    status = data.get('status')
+
+    if not item_id or not status:
+        return jsonify({'error': 'Invalid input'}), 400
+
+    item = base_collection_item_repository.update_item_status(item_id=item_id, status=status)
+
+    return jsonify({'itemId': item.id, 'collectionId': item.collection_id, 'user_id': item.user_id, 'status': item.status,
+                   'description': item.description}), 200

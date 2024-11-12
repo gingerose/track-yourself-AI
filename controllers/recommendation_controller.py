@@ -30,17 +30,23 @@ def get_films_data():
     collection_id = '2435466'  # ID фильмов
     limit = data.get('limit', 10)  # Устанавливаем 10 как значение по умолчанию
     offset = data.get('offset', 0)  # Начинаем с 0 как значение по умолчанию
+    search = data.get('search', '').strip()  # Получаем значение поиска (если есть)
+    print(search)
 
     items, error = recommendation_service.get_items_from_collection(
         collection_id=collection_id,
         limit=limit,
-        offset=offset
+        offset=offset,
+        search=search  # передаем параметр поиска
     )
+
+    print(error)
 
     if error:
         return jsonify({'error': error}), 404
 
     return jsonify(items), 200
+
 
 
 @recommendation_bp.route('/books-data', methods=['POST'])
@@ -49,11 +55,13 @@ def get_books_data():
     collection_id = '9875768'  # ID книг
     limit = data.get('limit', 10)  # Устанавливаем 10 как значение по умолчанию
     offset = data.get('offset', 0)  # Начинаем с 0 как значение по умолчанию
+    search = data.get('search', '').strip()  # Получаем значение поиска (если есть)
 
     items, error = recommendation_service.get_items_from_collection(
         collection_id=collection_id,
         limit=limit,
-        offset=offset
+        offset=offset,
+        search=search  # передаем параметр поиска
     )
 
     if error:
@@ -78,9 +86,9 @@ def get_user_recommendations():
     # Преобразуем данные в формат, который нужно вернуть
     recommendations_list = [{
         'id': recommendation.id,
-        'collection_id': recommendation.collection_id,
-        'user_id': recommendation.user_id,
-        'recommendation_id': recommendation.recommendation_id,
+        'collectionId': recommendation.collection_id,
+        'userId': recommendation.user_id,
+        'recommendationId': recommendation.recommendation_id,
         'title': recommendation.title,
         'image': recommendation.image
     } for recommendation in recommendations]

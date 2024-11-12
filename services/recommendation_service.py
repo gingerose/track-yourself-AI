@@ -100,16 +100,16 @@ class RecommendationService:
 
         recommendations_list = [{
             'id': recommendation.id,
-            'collection_id': recommendation.collection_id,
-            'user_id': recommendation.user_id,
-            'recommendation_id': recommendation.recommendation_id,
+            'collectionId': recommendation.collection_id,
+            'userId': recommendation.user_id,
+            'recommendationId': recommendation.recommendation_id,
             'title': recommendation.title,
             'image': recommendation.image
         } for recommendation in recommendations]
 
         return recommendations_list, None
 
-    def get_items_from_collection(self, collection_id, limit=10, offset=0):
+    def get_items_from_collection(self, collection_id, limit=10, offset=0, search=''):
         # Определяем коллекцию, которую нужно отправить
         if collection_id == '2435466':  # ID фильмов
             df = self.films_df
@@ -118,14 +118,23 @@ class RecommendationService:
         else:
             return None, "Invalid collection ID"
 
-        # Ограничиваем результаты по limit и offset
-        items = df[['id', 'Name']].iloc[offset:offset + limit]
+        # Применяем фильтрацию по поисковому запросу, если он задан
+        if search:
+            df = df[df['Name'].str.contains(search, case=False, na=False)]
 
-        # Преобразуем id в int64, чтобы избежать переполнения
-        items['id'] = items['id'].apply(pd.to_numeric, errors='coerce').astype(np.int64)
+        # Ограничиваем результаты по limit и offset и фильтруем только строки с числовым 'id'
+        items = df[['id', 'Name']].iloc[offset:offset + limit]
+        items = items[items['id'].apply(lambda x: str(x).isdigit())]
+
+        # Преобразуем id в int64 после фильтрации
+        items['id'] = items['id'].astype(np.int64)
 
         # Преобразуем данные в список словарей
         items_list = items.to_dict(orient='records')
 
         return items_list, None
+
+
+
+
 
