@@ -27,7 +27,7 @@ def add_item():
         description=description
     )
 
-    return jsonify({'itemId': item.id, 'collectionId': item.collection_id, 'user_id': item.user_id, 'status': item.status,
+    return jsonify({'itemId': item.item_id, 'id': item.id, 'collectionId': item.collection_id, 'user_id': item.user_id, 'status': item.status,
                    'description': item.description}), 201
 
 
@@ -50,7 +50,7 @@ def get_items():
 
     items = base_collection_item_repository.get_items_by_user_and_collection(collection_id, user_id)
 
-    items_list = [{'itemId': item.id, 'collectionId': item.collection_id, 'user_id': item.user_id, 'status': item.status,
+    items_list = [{'itemId': item.item_id, 'id': item.id, 'collectionId': item.collection_id, 'user_id': item.user_id, 'status': item.status,
                    'description': item.description} for item in items]
 
     return jsonify(items_list), 200
@@ -71,13 +71,13 @@ def get_items_count():
 @base_collection_item_bp.route('/update-item-status', methods=['PUT'])
 def update_item_status():
     data = request.json
-    item_id = data.get('itemId')
+    id = data.get('id')
     status = data.get('status')
 
-    if not item_id or not status:
+    if not id or not status:
         return jsonify({'error': 'Invalid input'}), 400
 
-    item = base_collection_item_repository.update_item_status(item_id=item_id, status=status)
+    item = base_collection_item_repository.update_item_status(id=id, status=status)
 
-    return jsonify({'itemId': item.id, 'collectionId': item.collection_id, 'user_id': item.user_id, 'status': item.status,
+    return jsonify({'itemId': item.item_id, 'id': item.id, 'collectionId': item.collection_id, 'user_id': item.user_id, 'status': item.status,
                    'description': item.description}), 200

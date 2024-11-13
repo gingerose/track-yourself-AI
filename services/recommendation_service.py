@@ -81,12 +81,28 @@ class RecommendationService:
         top_indices = tf.argsort(similarity_scores, axis=1, direction='DESCENDING')[:, :10]
         recommended_items = [df.iloc[idx].to_dict() for idx in top_indices.numpy().flatten()]
 
-        for item in recommended_items:
+        # Удаляем старые рекомендации
+        self.recommendation_repo.delete_recommendations(int(collection_id), user_id)
+
+        # Обрабатываем каждую рекомендацию
+        for item in recommended_items[:10]:  # Добавляем только первые 10 элементов
             try:
-                recommendation_id = int(item['id'])
+                # Получаем recommendation_id
+                recommendation_id = item['id']
+
+                # Проверяем, является ли recommendation_id строкой и если да, проверяем на числовое значение
+                if isinstance(recommendation_id, str) and recommendation_id.isdigit():
+                    recommendation_id = int(recommendation_id)  # Преобразуем строку в число
+                elif not isinstance(recommendation_id, int):  # Если не строка и не целое число
+                    print(f"Skipping invalid recommendation_id: {recommendation_id}")
+                    continue  # Пропускаем этот элемент
+
+                # Получаем другие данные
                 image = item.get('PosterLink')
                 title = item.get('Name')
-                self.recommendation_repo.add_or_update_recommendation(
+
+                # Добавляем новую рекомендацию
+                self.recommendation_repo.add_recommendations(
                     collection_id=int(collection_id),
                     user_id=user_id,
                     recommendation_id=recommendation_id,
@@ -96,16 +112,13 @@ class RecommendationService:
             except (KeyError, ValueError) as e:
                 print(f"Error saving recommendation: {e}")
 
-        recommendations = RecommendationRepository.get_recommendations_by_user_and_collection(collection_id, user_id)
-
         recommendations_list = [{
-            'id': recommendation.id,
-            'collectionId': recommendation.collection_id,
-            'userId': recommendation.user_id,
-            'recommendationId': recommendation.recommendation_id,
-            'title': recommendation.title,
-            'image': recommendation.image
-        } for recommendation in recommendations]
+            'collectionId': collection_id,
+            'userId': user_id,
+            'recommendationId': recommendation['id'],
+            'title': recommendation.get('Name'),
+            'image': recommendation.get('PosterLink')
+        } for recommendation in recommended_items[:10]]
 
         return recommendations_list, None
 

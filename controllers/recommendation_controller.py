@@ -10,7 +10,7 @@ recommendation_service = RecommendationService(db)
 @recommendation_bp.route('/generate-recommendations', methods=['POST'])
 def get_recommendations():
     data = request.json
-    collection_id = data.get('collectionId')
+    collection_id = str(data.get('collectionId'))
     watched_ids = data.get('watchedIds')
     user_id = data.get('userId')
 

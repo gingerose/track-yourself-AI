@@ -39,8 +39,8 @@ class BaseCollectionItemRepository:
 
         return total_count, done_count
 
-    def update_item_status(self, item_id, status):
-        item = BaseCollectionItem.query.filter_by(id=item_id).first()
+    def update_item_status(self, id, status):
+        item = BaseCollectionItem.query.filter_by(id=id).first()
         if not item:
             return None
 

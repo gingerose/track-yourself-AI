@@ -7,28 +7,43 @@ class RecommendationRepository:
         self.db = db
 
     @staticmethod
-    def add_or_update_recommendation(collection_id, user_id, recommendation_id, title, image=None):
-        recommendation = Recommendation.query.filter_by(
+    def delete_recommendations(collection_id, user_id):
+        # Выводим значения для отладки
+        print(f"Deleting recommendations where collection_id={collection_id} and user_id={user_id}")
+
+        # Формируем и выполняем SQL запрос напрямую для удаления
+        query = f"DELETE FROM recommendation WHERE collection_id = {collection_id} AND user_id = {user_id}"
+
+        # Выполняем запрос
+        result = db.session.execute(query)
+
+        # Сохраняем изменения
+        db.session.commit()
+
+        print(f"Rows deleted: {result.rowcount}")
+
+        # Закрываем сессию
+        db.session.close()
+
+        # Проверяем завершение сессии
+        if db.session.is_active:
+            print("Session is still active.")
+        else:
+            print("Session is closed.")
+
+        return result.rowcount
+
+    @staticmethod
+    def add_recommendations(collection_id, user_id, recommendation_id, title, image=None):
+        recommendation = Recommendation(
             collection_id=collection_id,
             user_id=user_id,
-            recommendation_id=recommendation_id
-        ).first()
-
-        if recommendation:
-            recommendation.title = title
-            recommendation.image = image
-        else:
-            recommendation = Recommendation(
-                collection_id=collection_id,
-                user_id=user_id,
-                recommendation_id=recommendation_id,
-                title=title,
-                image=image
-            )
-            db.session.add(recommendation)
-
+            recommendation_id=recommendation_id,
+            title=title,
+            image=image
+        )
+        db.session.add(recommendation)
         db.session.commit()
-        return recommendation
 
     @staticmethod
     def get_recommendations_by_user_and_collection(collection_id, user_id):
