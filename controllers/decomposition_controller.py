@@ -16,6 +16,7 @@ def decompose_task():
         return jsonify({'error': 'Invalid input'}), 400
 
     steps, error = decomposition_service.decompose_task(task_description, planId)
+    print(error)
 
     if error:
         return jsonify({'error': error}), 500
