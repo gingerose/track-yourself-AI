@@ -79,11 +79,15 @@ class TeamRepository:
         return False
 
     def update_team_title(self, team_id, new_title):
-        team = Team.query.filter_by(id=team_id).first()
+        team = self.db.session.query(Team).filter_by(id=team_id).first()
         if team:
             team.title = new_title
+            self.db.session.merge(team)
             self.db.session.commit()
-        return team
+            return team
+        else:
+            print("Team not found with ID:", team_id)
+            return None
 
     def get_team_by_id(self, team_id):
         team = Team.query.filter_by(id=team_id).first()
@@ -95,11 +99,10 @@ class TeamRepository:
             'teamTitle': team.title,
         }
 
-    def add_task(self, member_id, title, comment=None, status='EMPTY'):
+    def add_task(self, member_id, title, status='EMPTY'):
         task = TeamTask(
             member_id=member_id,
             title=title,
-            comment=comment,
             status=status
         )
         self.db.session.add(task)
@@ -107,26 +110,73 @@ class TeamRepository:
         return task
 
     def get_tasks_by_team(self, team_id):
-        return self.db.session.query(TeamTask, User.username, User.picture, Member.id, Member.is_lead).join(Member,
-                                                                                                            TeamTask.member_id == Member.id) \
-            .join(User, Member.user_id == User.user_id) \
-            .filter(Member.team_id == team_id).all()
+        # Запрос для получения всех участников команды и их задач (даже если задач нет)
+        tasks_data = self.db.session.query(
+            Member.id.label('member_id'),
+            User.username,
+            User.picture,
+            Member.is_lead,
+            Member.comment.label('member_comment'),
+            TeamTask.id.label('task_id'),
+            TeamTask.title,
+            TeamTask.date,
+            TeamTask.status
+        ).join(User, User.user_id == Member.user_id) \
+            .outerjoin(TeamTask, TeamTask.member_id == Member.id) \
+            .filter(Member.team_id == team_id) \
+            .order_by(Member.id) \
+            .all()
 
-    def update_task(self, task_id, title=None, comment=None, status=None):
+        # Группируем задачи по участникам
+        members = {}
+        for task in tasks_data:
+            member_id = task.member_id
+            if member_id not in members:
+                members[member_id] = {
+                    'memberId': member_id,
+                    'username': task.username,
+                    'picture': task.picture,
+                    'isLead': task.is_lead,
+                    'comment': task.member_comment,
+                    'tasks': []
+                }
+
+            # Если у участника есть задачи, добавляем их в список задач
+            if task.task_id:
+                members[member_id]['tasks'].append({
+                    'taskId': task.task_id,
+                    'title': task.title,
+                    'date': task.date,
+                    'status': task.status,
+                })
+
+        # Преобразуем словарь в список
+        return list(members.values())
+
+    def update_task(self, task_id, title=None, status=None):
         task = TeamTask.query.get(task_id)
         if task:
             if title:
                 task.title = title
-            if comment:
-                task.comment = comment
             if status:
                 task.status = status
+            self.db.session.merge(task)
             self.db.session.commit()
         return task
+
+    def update_member(self, member_id, comment=None):
+        member = Member.query.get(member_id)
+        if member:
+            if comment:
+                member.comment = comment
+            self.db.session.merge(member)
+            self.db.session.commit()
+        return member
 
     def delete_task(self, task_id):
         task = TeamTask.query.get(task_id)
         if task:
+            task = self.db.session.merge(task)  # Объединяем с текущей сессией
             self.db.session.delete(task)
             self.db.session.commit()
         return task

@@ -9,5 +9,4 @@ class TeamTask(db.Model):
     member_id = db.Column(db.Integer, nullable=False)
     title = db.Column(db.Text, nullable=False)
     date = db.Column(db.Date, default=datetime.today, nullable=False)
-    comment = db.Column(db.Text, nullable=True)
     status = db.Column(db.String, default='EMPTY', nullable=False)

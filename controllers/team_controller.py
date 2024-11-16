@@ -35,7 +35,6 @@ def get_team_members(user_id):
 # 3. Удаление команды
 @team_bp.route('/team/<int:team_id>', methods=['DELETE'])
 def delete_team(team_id):
-    print("!!!!!")
     rows_deleted = team_repository.delete_team(team_id)
     print(rows_deleted)
     if not rows_deleted:
@@ -48,6 +47,7 @@ def delete_team(team_id):
 def update_team_title(team_id):
     data = request.json
     new_title = data.get('teamTitle')
+    print(new_title)
 
     if not new_title:
         return jsonify({'error': 'New team title is required'}), 400
@@ -73,45 +73,40 @@ def add_task():
     data = request.json
     member_id = data.get('memberId')
     title = data.get('title')
-    comment = data.get('comment')
     status = data.get('status', 'EMPTY')
 
     if not member_id or not title:
         return jsonify({'error': 'Member ID and title are required'}), 400
 
-    task = team_repository.add_task(member_id, title, comment, status)
-    return jsonify({'taskId': task.id, 'title': task.title, 'comment': task.comment, 'status': task.status}), 201
+    task = team_repository.add_task(member_id, title, status)
+    return jsonify({'taskId': task.id, 'title': task.title, 'status': task.status}), 201
 
 # 7. Получение всех заданий для определённой команды
 @team_bp.route('/team/tasks/<int:team_id>', methods=['GET'])
 def get_tasks_by_team(team_id):
     tasks = team_repository.get_tasks_by_team(team_id)
-    result = [
-        {
-            'taskId': task.id,
-            'title': task.title,
-            'date': task.date,
-            'comment': task.comment,
-            'status': task.status,
-            'username': username,
-            'picture': picture,
-            'isLead': is_lead,
-            'memberId': id
-        }
-        for task, username, picture, is_lead, id in tasks
-    ]
-    return jsonify(result), 200
+    return jsonify(tasks), 200
 
 # 8. Обновление задания
 @team_bp.route('/task/<int:task_id>', methods=['PUT'])
 def update_task(task_id):
     data = request.json
     title = data.get('title')
-    comment = data.get('comment')
     status = data.get('status')
 
-    task = team_repository.update_task(task_id, title, comment, status)
+    task = team_repository.update_task(task_id, title, status)
     if not task:
+        return jsonify({'error': 'Task not found'}), 404
+
+    return jsonify({'message': 'Task updated successfully'}), 200
+
+@team_bp.route('/member/<int:member_id>', methods=['PUT'])
+def update_member(member_id):
+    data = request.json
+    comment = data.get('comment')
+
+    member = team_repository.update_member(member_id, comment)
+    if not member:
         return jsonify({'error': 'Task not found'}), 404
 
     return jsonify({'message': 'Task updated successfully'}), 200
@@ -119,6 +114,7 @@ def update_task(task_id):
 # 9. Удаление задания
 @team_bp.route('/task/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
+    print(task_id)
     task = team_repository.delete_task(task_id)
     if not task:
         return jsonify({'error': 'Task not found'}), 404
