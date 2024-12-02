@@ -9,7 +9,6 @@ class DecompositionService:
 
     def decompose_task(self, task_description, plan_id, min_points=6, max_points=10):
         try:
-            # openai.api_key = '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'
 
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
