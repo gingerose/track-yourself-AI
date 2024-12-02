@@ -31,7 +31,6 @@ class ScheduleService:
         schedule_predictions = predict_schedule(plans, week_end)
         schedule_predictions = {str(k): v for k, v in schedule_predictions.items()}
 
-        # Получение и удаление существующего расписания
         schedule = self.schedule_repo.get_schedule_by_date(week_end, user_id)
         if schedule:
             self.schedule_repo.delete_schedule_by_date(week_end, user_id)

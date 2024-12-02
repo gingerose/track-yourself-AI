@@ -27,14 +27,12 @@ class TeamRepository:
         return new_team
 
     def get_teams_by_user(self, user_id):
-        # Находим все команды, в которых участвует указанный пользователь
         team_ids = self.db.session.query(Member.team_id).filter(Member.user_id == user_id).distinct().all()
-        team_ids = [team_id[0] for team_id in team_ids]  # Извлекаем сами id команд
+        team_ids = [team_id[0] for team_id in team_ids]
 
         if not team_ids:
             return []
 
-        # Получаем всех участников этих команд
         result = self.db.session.query(
             Member.id.label('member_id'),
             Member.is_lead,
@@ -48,7 +46,6 @@ class TeamRepository:
             .filter(Member.team_id.in_(team_ids)) \
             .all()
 
-        # Группируем участников по командам
         teams_dict = {}
         for row in result:
             team_id = row.team_id
@@ -66,7 +63,6 @@ class TeamRepository:
                 'isLead': row.is_lead
             })
 
-        # Преобразуем результат в список
         return list(teams_dict.values())
 
     def delete_team(self, team_id):
@@ -110,7 +106,7 @@ class TeamRepository:
         return task
 
     def get_tasks_by_team(self, team_id):
-        # Запрос для получения всех участников команды и их задач (даже если задач нет)
+
         tasks_data = self.db.session.query(
             Member.id.label('member_id'),
             User.username,
@@ -127,7 +123,6 @@ class TeamRepository:
             .order_by(Member.id) \
             .all()
 
-        # Группируем задачи по участникам
         members = {}
         for task in tasks_data:
             member_id = task.member_id
@@ -141,7 +136,6 @@ class TeamRepository:
                     'tasks': []
                 }
 
-            # Если у участника есть задачи, добавляем их в список задач
             if task.task_id:
                 members[member_id]['tasks'].append({
                     'taskId': task.task_id,
@@ -150,7 +144,6 @@ class TeamRepository:
                     'status': task.status,
                 })
 
-        # Преобразуем словарь в список
         return list(members.values())
 
     def update_task(self, task_id, title=None, status=None):
@@ -176,7 +169,7 @@ class TeamRepository:
     def delete_task(self, task_id):
         task = TeamTask.query.get(task_id)
         if task:
-            task = self.db.session.merge(task)  # Объединяем с текущей сессией
+            task = self.db.session.merge(task)
             self.db.session.delete(task)
             self.db.session.commit()
         return task

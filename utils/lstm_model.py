@@ -1,7 +1,5 @@
 import random
-from collections import defaultdict
 
-import numpy as np
 import pandas as pd
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.layers import LSTM, Dense, Dropout, BatchNormalization
@@ -90,6 +88,10 @@ def suggest_least_productive_time(best_time):
         return 'afternoon'
 
 
+from collections import defaultdict
+import numpy as np
+
+
 def distribute_schedule(plans, day_predictions, max_hours_per_day=12):
     week_schedule = defaultdict(list)
     day_load = np.zeros(7, dtype=int)
@@ -107,7 +109,8 @@ def distribute_schedule(plans, day_predictions, max_hours_per_day=12):
 
         for offset in range(7):
             current_day = (day + offset) % 7
-            if day_load[current_day] + duration <= max_hours_per_day:
+
+            if day_load[current_day] + duration <= max_hours_per_day or offset == 6:
                 week_schedule[current_day + 1].append({
                     'plan_id': plan.plan_id,
                     'name': plan.name,
@@ -120,7 +123,25 @@ def distribute_schedule(plans, day_predictions, max_hours_per_day=12):
                 })
                 day_load[current_day] += duration
                 break
+
+    empty_days = [i + 1 for i, load in enumerate(day_load) if load == 0]
+    if empty_days:
+        redistribute_tasks_to_empty_days(week_schedule, empty_days, max_hours_per_day)
+
     return dict(week_schedule)
+
+
+def redistribute_tasks_to_empty_days(schedule, empty_days, max_hours_per_day):
+    for day in empty_days:
+        for existing_day in sorted(schedule.keys()):
+            tasks = schedule[existing_day]
+            for task in tasks:
+                if task['priority'] == 'LOW' and task['duration'] <= max_hours_per_day:
+                    schedule[day].append(task)
+                    tasks.remove(task)
+                    break
+            if schedule[day]:
+                break
 
 
 def filter_plans(plans, reference_date):

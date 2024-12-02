@@ -5,7 +5,6 @@ from extensions import db
 team_bp = Blueprint('team', __name__)
 team_repository = TeamRepository(db)
 
-# 1. Добавление новой команды с участниками
 @team_bp.route('/team', methods=['POST'])
 def add_team_with_members():
     data = request.json
@@ -23,7 +22,6 @@ def add_team_with_members():
     new_team = team_repository.add_team_with_members(team_title, members_data)
     return jsonify({'teamId': new_team.id, 'teamTitle': new_team.title}), 201
 
-# 2. Получение информации о команде и её участниках
 @team_bp.route('/team/<int:user_id>/members', methods=['GET'])
 def get_team_members(user_id):
     members = team_repository.get_teams_by_user(user_id)
@@ -32,7 +30,6 @@ def get_team_members(user_id):
 
     return jsonify(members), 200
 
-# 3. Удаление команды
 @team_bp.route('/team/<int:team_id>', methods=['DELETE'])
 def delete_team(team_id):
     rows_deleted = team_repository.delete_team(team_id)
@@ -42,7 +39,6 @@ def delete_team(team_id):
 
     return jsonify({'message': 'Team deleted successfully'}), 200
 
-# 4. Обновление названия команды
 @team_bp.route('/team/<int:team_id>', methods=['PUT'])
 def update_team_title(team_id):
     data = request.json
@@ -58,7 +54,6 @@ def update_team_title(team_id):
 
     return jsonify({'teamId': updated_team.id, 'teamTitle': updated_team.title}), 200
 
-# 5. Получение информации о команде по ID
 @team_bp.route('/team/<int:team_id>', methods=['GET'])
 def get_team_by_id(team_id):
     team = team_repository.get_team_by_id(team_id)
@@ -67,7 +62,6 @@ def get_team_by_id(team_id):
 
     return jsonify(team), 200
 
-# 6. Добавление нового задания для участника команды
 @team_bp.route('/task', methods=['POST'])
 def add_task():
     data = request.json
@@ -81,13 +75,11 @@ def add_task():
     task = team_repository.add_task(member_id, title, status)
     return jsonify({'taskId': task.id, 'title': task.title, 'status': task.status}), 201
 
-# 7. Получение всех заданий для определённой команды
 @team_bp.route('/team/tasks/<int:team_id>', methods=['GET'])
 def get_tasks_by_team(team_id):
     tasks = team_repository.get_tasks_by_team(team_id)
     return jsonify(tasks), 200
 
-# 8. Обновление задания
 @team_bp.route('/task/<int:task_id>', methods=['PUT'])
 def update_task(task_id):
     data = request.json
@@ -111,7 +103,6 @@ def update_member(member_id):
 
     return jsonify({'message': 'Task updated successfully'}), 200
 
-# 9. Удаление задания
 @team_bp.route('/task/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
     print(task_id)

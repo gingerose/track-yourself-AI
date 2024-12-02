@@ -8,24 +8,18 @@ class RecommendationRepository:
 
     @staticmethod
     def delete_recommendations(collection_id, user_id):
-        # Выводим значения для отладки
         print(f"Deleting recommendations where collection_id={collection_id} and user_id={user_id}")
 
-        # Формируем и выполняем SQL запрос напрямую для удаления
         query = f"DELETE FROM recommendation WHERE collection_id = {collection_id} AND user_id = {user_id}"
 
-        # Выполняем запрос
         result = db.session.execute(query)
 
-        # Сохраняем изменения
         db.session.commit()
 
         print(f"Rows deleted: {result.rowcount}")
 
-        # Закрываем сессию
         db.session.close()
 
-        # Проверяем завершение сессии
         if db.session.is_active:
             print("Session is still active.")
         else:

@@ -18,7 +18,6 @@ def add_item():
     if not collection_id or not user_id or not item_id or not status or not description:
         return jsonify({'error': 'Invalid input'}), 400
 
-    # Используем репозиторий для добавления айтема
     item = base_collection_item_repository.add_item(
         collection_id=collection_id,
         user_id=user_id,

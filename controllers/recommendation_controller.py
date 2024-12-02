@@ -27,17 +27,17 @@ def get_recommendations():
 @recommendation_bp.route('/films-data', methods=['POST'])
 def get_films_data():
     data = request.json
-    collection_id = '2435466'  # ID фильмов
-    limit = data.get('limit', 10)  # Устанавливаем 10 как значение по умолчанию
-    offset = data.get('offset', 0)  # Начинаем с 0 как значение по умолчанию
-    search = data.get('search', '').strip()  # Получаем значение поиска (если есть)
+    collection_id = '2435466'
+    limit = data.get('limit', 10)
+    offset = data.get('offset', 0)
+    search = data.get('search', '').strip()
     print(search)
 
     items, error = recommendation_service.get_items_from_collection(
         collection_id=collection_id,
         limit=limit,
         offset=offset,
-        search=search  # передаем параметр поиска
+        search=search
     )
 
     print(error)
@@ -52,16 +52,16 @@ def get_films_data():
 @recommendation_bp.route('/books-data', methods=['POST'])
 def get_books_data():
     data = request.json
-    collection_id = '9875768'  # ID книг
-    limit = data.get('limit', 10)  # Устанавливаем 10 как значение по умолчанию
-    offset = data.get('offset', 0)  # Начинаем с 0 как значение по умолчанию
-    search = data.get('search', '').strip()  # Получаем значение поиска (если есть)
+    collection_id = '9875768'
+    limit = data.get('limit', 10)
+    offset = data.get('offset', 0)
+    search = data.get('search', '').strip()
 
     items, error = recommendation_service.get_items_from_collection(
         collection_id=collection_id,
         limit=limit,
         offset=offset,
-        search=search  # передаем параметр поиска
+        search=search
     )
 
     if error:
@@ -79,11 +79,8 @@ def get_user_recommendations():
     if not collection_id or not user_id:
         return jsonify({'error': 'Invalid input'}), 400
 
-    # Получаем рекомендации из базы данных
     recommendations = RecommendationRepository.get_recommendations_by_user_and_collection(collection_id, user_id)
 
-
-    # Преобразуем данные в формат, который нужно вернуть
     recommendations_list = [{
         'id': recommendation.id,
         'collectionId': recommendation.collection_id,

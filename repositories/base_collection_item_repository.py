@@ -30,10 +30,8 @@ class BaseCollectionItemRepository:
         return items
 
     def get_items_count_by_status(self, collection_id, user_id):
-        # Общее количество айтемов
         total_count = BaseCollectionItem.query.filter_by(collection_id=collection_id, user_id=user_id).count()
 
-        # Количество айтемов со статусом 'DONE'
         done_count = BaseCollectionItem.query.filter_by(collection_id=collection_id, user_id=user_id,
                                                         status='DONE').count()
 
